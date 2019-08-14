@@ -1,10 +1,10 @@
 require_relative('../db/sql_runner')
-
+require_relative('./album')
 
 class Artist
 
-  attr_reader :id, :name
-
+  attr_reader :id
+  attr_accessor :name
   def initialize(options)
     @id = options['id'].to_i if options['id']
     @name = options['name']
@@ -27,15 +27,35 @@ class Artist
     artists = SqlRunner.run(sql)
     return artists.map { |artist| Artist.new(artist)}
   end
-# find albums by artist:
-  def pizza_orders
-    sql = "SELECT * FROM pizza_orders WHERE customer_id = $1"
+
+  def select_from_albums
+    sql = "SELECT * FROM albums WHERE artist_id = $1"
     values = [@id]
-    orders_data = SqlRunner.run(sql, values)
-    orders = orders_data.map { |orders_data| PizzaOrder.new(orders_data)}
-    return orders
+    albums_found = SqlRunner.run(sql, values)
+    result = albums_found.map { |album| Album.new(album)  }
+    return result
   end
 
+  def update
+    sql = "UPDATE artists SET name = $1 WHERE id = $2 RETURNING *"
+    values = [@name, @id]
+    result = SqlRunner.run(sql, values)
+    updated_artist = Artist.new(result[0])
+    return updated_artist
+  end
+
+  def delete
+    sql = "DELETE FROM artists WHERE id =$1"
+    values = [@id]
+    SqlRunner.run(sql, values)
+  end
+
+  def Artist.find_by_id(id_number)
+    sql = "SELECT * FROM artists WHERE id = $1"
+    values = [id_number]
+    search_result = SqlRunner.run(sql, values)[0]
+    return Artist.new(search_result)
+  end
 
 
 end

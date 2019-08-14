@@ -3,7 +3,8 @@ require_relative('../db/sql_runner')
 
 class Album
 
-  attr_reader :id, :name, :genre, :artist_id
+  attr_reader :id, :artist_id
+  attr_accessor :name, :genre
 
   def initialize(options)
     @id = options["id"].to_i if options["id"]
@@ -36,7 +37,6 @@ class Album
     albums = SqlRunner.run(sql)
     return albums.map { |album| Album.new(album)}
   end
-  # find artist in the album:
 
   def get_artist
     sql = "SELECT * FROM artists WHERE id = $1"
@@ -46,13 +46,27 @@ class Album
     artist = Artist.new(artist_data)
     return artist
   end
-  # def customer
-  #     sql = "SELECT * FROM customers WHERE id = $1"
-  #     values = [@customer_id]
-  #     results = SqlRunner.run(sql, values)
-  #     customer_data = results[0]
-  #     customer = Customer.new(customer_data)
-  #     return customer
-  #   end
+
+  def update
+    sql = "UPDATE albums SET (name, genre, artist_id)
+    = ($1, $2, $3) WHERE id = $4 RETURNING *"
+    values = [@name, @genre, @artist_id, @id]
+    result = SqlRunner.run(sql, values)
+    updated_album = Album.new(result[0])
+    return updated_album
+  end
+
+  def delete
+    sql = "DELETE FROM albums WHERE id =$1"
+    values = [@id]
+    SqlRunner.run(sql, values)
+  end
+
+  def Album.find_by_id(id_number)
+    sql = "SELECT * FROM albums WHERE id = $1"
+    values = [id_number]
+    search_result = SqlRunner.run(sql, values)[0]
+    return Album.new(search_result)
+  end
 
 end
